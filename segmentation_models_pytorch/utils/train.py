@@ -41,9 +41,11 @@ class Epoch:
         loss_meter = AverageValueMeter()
         metrics_meters = {metric.__name__: AverageValueMeter() for metric in self.metrics}
 
+        iou_scores = []
+        nums = 0
         with tqdm(dataloader, desc=self.stage_name, file=sys.stdout, disable=not (self.verbose)) as iterator:
-            for x, y in iterator:
-                x, y = x.to(self.device), y.to(self.device)
+            for x,y,gt_y in iterator:
+                x,y,gt_y= x.to(self.device), y.to(self.device),gt_y.to(self.device)
                 loss, y_pred = self.batch_update(x, y)
 
                 # update loss logs
@@ -52,16 +54,20 @@ class Epoch:
                 loss_logs = {self.loss.__name__: loss_meter.mean}
                 logs.update(loss_logs)
 
+                y_pred=torch.nn.Softmax2d()(y_pred)
                 # update metrics logs
                 for metric_fn in self.metrics:
-                    metric_value = metric_fn(y_pred, y).cpu().detach().numpy()
+                    #y_pred=torch.argmax(y_pred,dim=1)
+                    metric_value = metric_fn(y_pred, gt_y).cpu().detach().numpy()
                     metrics_meters[metric_fn.__name__].add(metric_value)
                 metrics_logs = {k: v.mean for k, v in metrics_meters.items()}
                 logs.update(metrics_logs)
-
+                iou_scores.append(logs['iou_score'])
                 if self.verbose:
                     s = self._format_logs(logs)
                     iterator.set_postfix_str(s)
+                nums += 1
+        print('average iou_scors:{}'.format(sum(iou_scores) / float(nums)))
 
         return logs
 
@@ -85,7 +91,9 @@ class TrainEpoch(Epoch):
     def batch_update(self, x, y):
         self.optimizer.zero_grad()
         prediction = self.model.forward(x)
-        loss = self.loss(prediction, y)
+        #prediction = torch.view()
+        #label=y.unsqueeze(dim=1)
+        loss = self.loss(prediction, y.long())
         loss.backward()
         self.optimizer.step()
         return loss, prediction
