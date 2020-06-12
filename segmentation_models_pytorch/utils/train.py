@@ -6,10 +6,12 @@ from .meter import AverageValueMeter
 
 class Epoch:
 
-    def __init__(self, model, loss, metrics, stage_name, device='cpu', verbose=True):
+    def __init__(self, model,loss_idcard_detection,loss_logo_detection,metrics_idcard_detection,metrics_logo_detection, optimizer,stage_name, device='cpu', verbose=True):
         self.model = model
-        self.loss = loss
-        self.metrics = metrics
+        self.loss_idcard_detection = loss_idcard_detection
+        self.loss_logo_detection=loss_logo_detection
+        self.metrics_idcard_detection = metrics_idcard_detection
+        self.metrics_logo_detection=metrics_logo_detection
         self.stage_name = stage_name
         self.verbose = verbose
         self.device = device
@@ -18,16 +20,19 @@ class Epoch:
 
     def _to_device(self):
         self.model.to(self.device)
-        self.loss.to(self.device)
-        for metric in self.metrics:
-            metric.to(self.device)
+        self.loss_idcard_detection.to(self.device)
+        self.loss_logo_detection.to(self.device)
+        for metrics_idcard_detection in self.metrics_idcard_detection:
+            metrics_idcard_detection.to(self.device)
+        for metrics_logo_detection in self.metrics_logo_detection:
+            metrics_logo_detection.to(self.device)
 
     def _format_logs(self, logs):
         str_logs = ['{} - {:.4}'.format(k, v) for k, v in logs.items()]
         s = ', '.join(str_logs)
         return s
 
-    def batch_update(self, x, y):
+    def batch_update(self,x,mask_idcard_detection,mask_logo_detection):
         raise NotImplementedError
 
     def on_epoch_start(self):
@@ -44,78 +49,96 @@ class Epoch:
         iou_scores = []
         nums = 0
         with tqdm(dataloader, desc=self.stage_name, file=sys.stdout, disable=not (self.verbose)) as iterator:
-            for x,y,gt_y in iterator:
-                x,y,gt_y= x.to(self.device), y.to(self.device),gt_y.to(self.device)
-                loss, y_pred = self.batch_update(x, y)
+            for image,(mask_idcard_detection,mask_logo_detection),(gt_mask_idcard_detection,gt_mask_logo_detection) in iterator:
+                image=image.to(self.device)
+                mask_idcard_detection=mask_idcard_detection.to(self.device)
+                mask_logo_detection=mask_logo_detection.to(self.device)
 
-                # update loss logs
-                loss_value = loss.cpu().detach().numpy()
-                loss_meter.add(loss_value)
-                loss_logs = {self.loss.__name__: loss_meter.mean}
-                logs.update(loss_logs)
+                gt_mask_idcard_detection=gt_mask_idcard_detection.to(self.device)
+                gt_mask_logo_detection=gt_mask_logo_detection.to(self.device)
 
-                y_pred=torch.nn.Softmax2d()(y_pred)
-                # update metrics logs
-                for metric_fn in self.metrics:
-                    #y_pred=torch.argmax(y_pred,dim=1)
-                    metric_value = metric_fn(y_pred, gt_y).cpu().detach().numpy()
-                    metrics_meters[metric_fn.__name__].add(metric_value)
-                metrics_logs = {k: v.mean for k, v in metrics_meters.items()}
-                logs.update(metrics_logs)
-                iou_scores.append(logs['iou_score'])
-                if self.verbose:
-                    s = self._format_logs(logs)
-                    iterator.set_postfix_str(s)
-                nums += 1
-        print('average iou_scors:{}'.format(sum(iou_scores) / float(nums)))
+                loss, y_idcard_detection,y_logo_detection = self.batch_update(image,mask_idcard_detection,mask_logo_detection)
+
+        #         # update loss logs
+        #         loss_value = loss.cpu().detach().numpy()
+        #         loss_meter.add(loss_value)
+        #         loss_logs = {self.loss.__name__: loss_meter.mean}
+        #         logs.update(loss_logs)
+        #
+        #         y_idcard_detection=torch.nn.Softmax2d()(y_idcard_detection)
+        #         y_logo_detection=torch.nn.Softmax2d()(y_logo_detection)
+        #         # update metrics logs
+        #         for metric_fn in self.metrics_idcard_detection:
+        #             #y_pred=torch.argmax(y_pred,dim=1)
+        #             metric_value = metric_fn(y_idcard_detection, gt_mask_idcard_detection).cpu().detach().numpy()
+        #             metrics_meters[metric_fn.__name__].add(metric_value)
+        #         for metric_fn in self.metrics_logo_detection:
+        #             #y_pred=torch.argmax(y_pred,dim=1)
+        #             metric_value = metric_fn(y_idcard_detection, gt_mask_idcard_detection).cpu().detach().numpy()
+        #             metrics_meters[metric_fn.__name__].add(metric_value)
+        #         metrics_logs = {k: v.mean for k, v in metrics_meters.items()}
+        #         logs.update(metrics_logs)
+        #         iou_scores.append(logs['iou_score'])
+        #         if self.verbose:
+        #             s = self._format_logs(logs)
+        #             iterator.set_postfix_str(s)
+        #         nums += 1
+        # print('average iou_scors:{}'.format(sum(iou_scores) / float(nums)))
 
         return logs
 
 
 class TrainEpoch(Epoch):
 
-    def __init__(self, model, loss, metrics, optimizer, device='cpu', verbose=True):
+    def __init__(self,model, loss_idcard_detection,loss_logo_detection,metrics_idcard_detection,metrics_logo_detection, optimizer, device='cpu', verbose=True):
         super().__init__(
             model=model,
-            loss=loss,
-            metrics=metrics,
+            loss_idcard_detection=loss_idcard_detection,
+            loss_logo_detection=loss_logo_detection,
+            metrics_idcard_detection=metrics_idcard_detection,
+            metrics_logo_detection=metrics_logo_detection,
             stage_name='train',
             device=device,
-            verbose=verbose,
-        )
+            verbose=verbose)
         self.optimizer = optimizer
 
     def on_epoch_start(self):
         self.model.train()
 
-    def batch_update(self, x, y):
+    def batch_update(self,x, mask_idcard_detection,mask_logo_detection):
         self.optimizer.zero_grad()
-        prediction = self.model.forward(x)
+        prediction_idcard_detection,prediction_logo_detection = self.model.forward(x)
         #prediction = torch.view()
         #label=y.unsqueeze(dim=1)
-        loss = self.loss(prediction, y.long())
+        loss_idcard_detection = self.loss_idcard_detection(prediction_idcard_detection, mask_idcard_detection.long())
+        loss_logo_detection=self.loss_logo_detection(prediction_logo_detection,mask_logo_detection)
+        loss=loss_logo_detection+loss_idcard_detection
         loss.backward()
         self.optimizer.step()
-        return loss, prediction
+        return loss, prediction_idcard_detection,prediction_logo_detection
 
 
 class ValidEpoch(Epoch):
 
-    def __init__(self, model, loss, metrics, device='cpu', verbose=True):
+    def __init__(self, model, loss_idcard_detection,loss_logo_detection,metrics_idcard_detection,metrics_logo_detection, device='cpu', verbose=True):
         super().__init__(
             model=model,
-            loss=loss,
-            metrics=metrics,
+            loss_idcard_detection=loss_idcard_detection,
+            loss_logo_detection=loss_logo_detection,
+            metrics_idcard_detection=metrics_idcard_detection,
+            metrics_logo_detection=metrics_logo_detection,
             stage_name='valid',
             device=device,
-            verbose=verbose,
-        )
+            verbose=verbose,)
 
     def on_epoch_start(self):
         self.model.eval()
 
-    def batch_update(self, x, y):
+    def batch_update(self, x, mask_idcard_detection,mask_logo_detection):
         with torch.no_grad():
-            prediction = self.model.forward(x)
-            loss = self.loss(prediction, y)
-        return loss, prediction
+            prediction_idcard_detection,prediction_logo_detection = self.model.forward(x)
+            loss_idcard_detection = self.loss_idcard_detection(prediction_idcard_detection,
+                                                               mask_idcard_detection.long())
+            loss_logo_detection = self.loss_logo_detection(prediction_logo_detection, mask_logo_detection)
+            loss = loss_logo_detection + loss_idcard_detection
+        return loss, prediction_idcard_detection,prediction_logo_detection
