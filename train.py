@@ -39,22 +39,25 @@ class Dataset(BaseDataset):
 
     """
 
-    CLASSES = ['background','up_obverse','up_reverse','drown_obverse','drown_reverse']
+    #CLASSES = ['background','up_obverse','up_reverse','drown_obverse','drown_reverse']
 
     def __init__(
             self,
             images_dir,
             masks_dir,
-            classes=None,
+            classes_idcard_detection=None,
+            classes_logo_detection=None,
             augmentation=None,
             preprocessing=None,
     ):
         self.ids = os.listdir(images_dir)
         self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.ids]
         self.masks_fps = [os.path.join(masks_dir, image_id.split('.')[0]) for image_id in self.ids]
-
+        self.CLASSES_idcard_detection=classes_idcard_detection
+        self.CLASSES_logo_detection=classes_logo_detection
         # convert str names to class values on masks
-        self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
+        self.class_values_idcard_detection = [self.CLASSES_idcard_detection.index(cls.lower()) for cls in classes_idcard_detection]
+        self.class_values_logo_detection=[self.CLASSES_logo_detection.index(cls.lower()) for cls in classes_logo_detection]
 
         self.augmentation = augmentation
         self.preprocessing = preprocessing
@@ -68,7 +71,9 @@ class Dataset(BaseDataset):
         mask_file=self.masks_fps[i].split('/')[-1]
         mask_idcard_detection = cv2.imread(os.path.join(self.masks_fps[i],mask_file+'_1.png'), 0)
         mask_logo_detection=cv2.imread(os.path.join(self.masks_fps[i],mask_file+'_2.png'), 0)
-        # cv2.imshow(str(np.random.randint(0, 199999)), mask * 50)
+        # img=image+mask_logo_detection*10
+        #cv2.imshow('logo',mask_logo_detection*255)
+        # cv2.imshow('ttt',img)
         # cv2.waitKey(3000000)
         #mask[mask>0]=1
         #visualize(image=image,mask=mask*80)
@@ -76,10 +81,10 @@ class Dataset(BaseDataset):
 
 
         # extract certain classes from mask (e.g. cars)
-        mask_idcard_detection = [(mask_idcard_detection == v) for v in self.class_values]
+        mask_idcard_detection = [(mask_idcard_detection == v) for v in self.class_values_idcard_detection]
         #mask_idcard_detection = np.stack(mask_idcard_detection, axis=-1)
 
-        mask_logo_detection = [(mask_logo_detection == v) for v in self.class_values]
+        mask_logo_detection = [(mask_logo_detection == v) for v in self.class_values_logo_detection]
         #mask_logo_detection = np.stack(mask_logo_detection, axis=-1)
 
         mask_idcard_detection.extend(mask_logo_detection)
@@ -167,7 +172,8 @@ def get_preprocessing(preprocessing_fn):
 #ENCODER = 'se_resnext50_32x4d'
 ENCODER = 'resnet18'
 ENCODER_WEIGHTS = 'imagenet'
-CLASSES = ['background','up_obverse','up_reverse','drown_obverse','drown_reverse']
+CLASSES_idcard_detection = ['background','up_obverse','up_reverse','drown_obverse','drown_reverse']
+CLASSES_logo_detection = ['background','logo']
 ACTIVATION = 'softmax2d' # could be None for logits or 'softmax2d' for multicalss segmentation
 DEVICE = 'cuda'
 
@@ -175,24 +181,28 @@ DEVICE = 'cuda'
 model = smp.Unet(
     encoder_name=ENCODER,
     encoder_weights=ENCODER_WEIGHTS,
-    classes=len(CLASSES),
+    classes_idcard_detection=len(CLASSES_idcard_detection),
+    classes_logo_detection=len(CLASSES_logo_detection),
     activation=None,
 )
-
+#model = torch.load('/home/simple/mydemo/ocr_project/segment/segmentation_models.pytorch/best_model_6_16.pth').cuda()
 preprocessing_fn = smp.encoders.get_preprocessing_fn(ENCODER, ENCODER_WEIGHTS)
 train_dataset = Dataset(
     x_train_dir,
     y_train_dir,
     augmentation=get_training_augmentation(),
     preprocessing=get_preprocessing(preprocessing_fn),
-    classes=CLASSES,)
+    classes_idcard_detection=CLASSES_idcard_detection,
+    classes_logo_detection=CLASSES_logo_detection
+)
 
 valid_dataset = Dataset(
     x_valid_dir,
     y_valid_dir,
     augmentation=get_validation_augmentation(),
     preprocessing=get_preprocessing(preprocessing_fn),
-    classes=CLASSES,)
+    classes_idcard_detection=CLASSES_idcard_detection,
+    classes_logo_detection=CLASSES_logo_detection)
 
 train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8)
 valid_loader = DataLoader(valid_dataset, batch_size=8, shuffle=False, num_workers=8)
@@ -210,7 +220,7 @@ metrics_logo_detection = [
    # smp.utils.metrics.Accuracy(),
 ]
 optimizer = torch.optim.Adam([
-    dict(params=model.parameters(), lr=0.01),
+    dict(params=model.parameters(), lr=0.001),
 ])
 
 schedular=MultiStepLR(optimizer=optimizer,milestones=[30,60])
@@ -247,8 +257,8 @@ for i in range(0, 100):
     train_logs = train_epoch.run(train_loader)
     valid_logs = valid_epoch.run(valid_loader)
 
-    torch.save(model, './best_model.pth')
-    print('Model saved!')
+    # torch.save(model, './best_model.pth')
+    # print('Model saved!')
 
     # do something (save model, change lr, etc.)
     # if max_score < valid_logs['iou_score']:

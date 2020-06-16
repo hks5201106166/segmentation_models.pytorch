@@ -50,7 +50,8 @@ class Unet(SegmentationModel):
         decoder_channels: List[int] = (256, 128, 64, 32, 16),
         decoder_attention_type: Optional[str] = None,
         in_channels: int = 3,
-        classes: int = 1,
+        classes_idcard_detection: int = 1,
+        classes_logo_detection: int = 1,
         activation: Optional[Union[str, callable]] = None,
         aux_params: Optional[dict] = None,
     ):
@@ -72,9 +73,15 @@ class Unet(SegmentationModel):
             attention_type=decoder_attention_type,
         )
 
-        self.segmentation_head = SegmentationHead(
+        self.segmentation_head_idcard_detection = SegmentationHead(
             in_channels=decoder_channels[-1],
-            out_channels=classes,
+            out_channels=classes_idcard_detection,
+            activation=activation,
+            kernel_size=3,
+        )
+        self.segmentation_head_logo_detection = SegmentationHead(
+            in_channels=decoder_channels[-1],
+            out_channels=classes_logo_detection,
             activation=activation,
             kernel_size=3,
         )

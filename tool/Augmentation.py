@@ -25,17 +25,17 @@ def get_training_augmentation():
             #
             iaa.Resize(size=(512,512)),
             #iaa.CoarseDropout((0.0, 0.10), size_percent=0.03, per_channel=0.5),
-            # sometimes(iaa.OneOf([
-            #                        iaa.GaussianBlur((0, 3.0)),
-            #                        iaa.AverageBlur(k=(3, 3)),
-            #                        iaa.MedianBlur(k=(3, 3)),
-            #                        iaa.AverageBlur(k=(5, 5)),
-            #                        iaa.MedianBlur(k=(5, 5)),
-            #                         iaa.AverageBlur(k=(7, 7)),
-            #                         iaa.MedianBlur(k=(7, 7)),
-            #                         iaa.Multiply((0.5, 1.5), per_channel=0.5),
-            #
-            #                ]))
+            sometimes(iaa.OneOf([
+                                   iaa.GaussianBlur((0, 3.0)),
+                                   iaa.AverageBlur(k=(3, 3)),
+                                   iaa.MedianBlur(k=(3, 3)),
+                                   iaa.AverageBlur(k=(5, 5)),
+                                   iaa.MedianBlur(k=(5, 5)),
+                                    iaa.AverageBlur(k=(7, 7)),
+                                    iaa.MedianBlur(k=(7, 7)),
+                                    iaa.Multiply((0.5, 1.5), per_channel=0.5),
+
+                           ]))
             # iaa.Fliplr(0.5),  # horizontally flip 50% of all images
             # iaa.Flipud(0.2),  # vertically flip 20% of all images
             #
