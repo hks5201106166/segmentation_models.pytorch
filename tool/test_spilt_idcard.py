@@ -15,7 +15,7 @@ import segmentation_models_pytorch as smp
 import albumentations as albu
 import time
 import matplotlib.pyplot as plt
-if len(os.listdir('/home/simple/mydemo/segmentation_models_mulclass/test_results'))==0:
+if len(os.listdir('/home/simple/mydemo/ocr_project/segment/segmentation_models.pytorch/test_results'))==0:
     os.mkdir('/home/simple/mydemo/segmentation_models_mulclass/test_results/drown_obverse')
     os.mkdir('/home/simple/mydemo/segmentation_models_mulclass/test_results/drown_reverse')
     os.mkdir('/home/simple/mydemo/segmentation_models_mulclass/test_results/up_obverse')
@@ -221,7 +221,7 @@ optimizer = torch.optim.Adam([
 best_model = torch.load('/home/simple/mydemo/segmentation_models_mulclass/save_model/best_model.pth').cuda()
 # create test dataset
 
-path='/home/simple/mydemo/segmentation_models_mulclass/test_data/'
+path='/home/simple/mydemo/ocr_project/segment/segmentation_models.pytorch/test_data/'
 train_or_test='test/'
 # path='/home/simple/mydemo/segmentation_models_mulclass/'
 # train_or_test='error_data/'
