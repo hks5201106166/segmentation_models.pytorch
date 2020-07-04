@@ -51,7 +51,7 @@ class Dataset(BaseDataset):
     ):
         self.ids = os.listdir(images_dir)
         self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.ids]
-        self.masks_fps = [os.path.join(masks_dir, image_id.split('.')[0]+'.png') for image_id in self.ids]
+        self.masks_fps = [os.path.join(masks_dir, image_id.split('.')[0]+'.jpg') for image_id in self.ids]
 
         # convert str names to class values on masks
         self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
@@ -179,11 +179,11 @@ valid_dataset = Dataset(
     preprocessing=get_preprocessing(preprocessing_fn),
     classes=CLASSES,)
 
-train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8)
+train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=2)
 valid_loader = DataLoader(valid_dataset, batch_size=8, shuffle=False, num_workers=8)
 #loss=smp.utils.losses.DiceLoss(weight=torch.Tensor([0.5,1,1,1,1,1,1,1,1,1,1,1,1,1]))
-loss = smp.utils.losses.CrossEntropyLoss(weight=torch.Tensor([0.5,1,1,1,1,1,1,1,1,1,1,1,1,1]))
-#loss = smp.utils.losses.CrossEntropyLoss()
+#loss = smp.utils.losses.CrossEntropyLoss(weight=torch.Tensor([1,1]))
+loss = smp.utils.losses.CrossEntropyLoss()
 #loss=torch.nn.CrossEntropyLoss()
 metrics = [
     smp.utils.metrics.IoU(threshold=0.5),
