@@ -257,8 +257,8 @@ for i in range(0, 100):
     train_logs = train_epoch.run(train_loader)
     valid_logs = valid_epoch.run(valid_loader)
 
-    # torch.save(model, './best_model.pth')
-    # print('Model saved!')
+    torch.save(model, './best_model.pth')
+    print('Model saved!')
 
     # do something (save model, change lr, etc.)
     # if max_score < valid_logs['iou_score']:

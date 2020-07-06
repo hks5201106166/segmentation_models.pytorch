@@ -33,9 +33,8 @@ def get_training_augmentation():
                                    iaa.MedianBlur(k=(5, 5)),
                                     iaa.AverageBlur(k=(7, 7)),
                                     iaa.MedianBlur(k=(7, 7)),
-                                    iaa.Multiply((0.5, 1.5), per_channel=0.5),
-
-                           ]))
+                                    iaa.Multiply((0.5, 1.5), per_channel=0.5),])),
+            iaa.MultiplyBrightness((0.5, 1.))
             # iaa.Fliplr(0.5),  # horizontally flip 50% of all images
             # iaa.Flipud(0.2),  # vertically flip 20% of all images
             #

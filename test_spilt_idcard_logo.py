@@ -1,7 +1,4 @@
 #-*-coding:utf-8-*-
-#-*-coding:utf-8-*-
-#-*-coding:utf-8-*-
-#-*-coding:utf-8-*-
 
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -23,6 +20,7 @@ if len(os.listdir(path))==0:
     os.mkdir(path+'drown_reverse')
     os.mkdir(path+'up_obverse')
     os.mkdir(path+'up_reverse')
+    os.mkdir(path+'data_split')
 def crop_rect(img, rect,logo_mask):
     # get the parameter of the small rectangle
     boxs = cv2.boxPoints(rect)
@@ -143,8 +141,8 @@ optimizer = torch.optim.Adam([
 best_model = torch.load('/home/simple/mydemo/ocr_project/segment/segmentation_models.pytorch/best_model.pth').cuda()
 # create test dataset
 
-path='/home/simple/mydemo/ocr_project/segment/test_data/'
-train_or_test='test/'
+path='/home/simple/mydemo/ocr_project/segment/data/test_results/idcards_train/'
+train_or_test='train/'
 # path='/home/simple/mydemo/segmentation_models_mulclass/'
 #train_or_test='error_sample/'
 images_name=os.listdir(path+train_or_test)
@@ -202,34 +200,75 @@ for i,image_name in enumerate(images_name):
             index_max=np.argmax(ls)
             rect=cv2.minAreaRect(contours[index_max])
             img_crop,logo_mask_crop,img_rot=crop_rect(image,rect,logo_mask)
-            if index==1:
-                os.mkdir('test_results/up_obverse/'+image_name.split('.jpg')[0])
-                cv2.imwrite('test_results/up_obverse/'+image_name.split('.jpg')[0]+'/'+str(index)+image_name,img_crop)
-                cv2.imwrite('test_results/up_obverse/'+image_name.split('.jpg')[0]+'/'+'_mask_'+image_name,logo_mask_crop*255)
-                cv2.imwrite('test_results/up_obverse/' + image_name.split('.jpg')[0] + '/' + '_imagemask_' + image_name,cv2.addWeighted(img_crop[:,:,0],0.6,logo_mask_crop*255,0.4,0))
-                nums_id+=1
-            if index==2:
-                img_crop = cv2.rotate(img_crop,rotateCode = cv2.ROTATE_180)
-                logo_mask_crop=cv2.rotate(logo_mask_crop,rotateCode = cv2.ROTATE_180)
-                os.mkdir('test_results/up_reverse/' + image_name.split('.jpg')[0])
-                cv2.imwrite('test_results/up_reverse/' + image_name.split('.jpg')[0]+'/'+str(index)+image_name,img_crop)
-                cv2.imwrite('test_results/up_reverse/' + image_name.split('.jpg')[0]+'/' + str(index)+'_mask_'+image_name,logo_mask_crop*255)
-                cv2.imwrite('test_results/up_reverse/' + image_name.split('.jpg')[0] + '/' + str(index) + '_imagemask_' + image_name,cv2.addWeighted(img_crop[:,:,0],0.6,logo_mask_crop*255,0.4,0))
-                nums_id += 1
-            if index==3:
+
+
+            if os.path.exists('test_results/drown_obverse/' + image_name.split('.jpg')[0])==False:
                 os.mkdir('test_results/drown_obverse/' + image_name.split('.jpg')[0])
-                cv2.imwrite('test_results/drown_obverse/' + image_name.split('.jpg')[0]+'/'+str(index)+image_name,img_crop)
-                cv2.imwrite('test_results/drown_obverse/' + image_name.split('.jpg')[0] +'/'+ str(index)+'_imagemask_'+image_name,logo_mask_crop*255)
-                cv2.imwrite('test_results/drown_obverse/' + image_name.split('.jpg')[0] + '/' + str(index) + '_mask_' + image_name, cv2.addWeighted(img_crop[:,:,0],0.6,logo_mask_crop*255,0.4,0))
-                nums_id += 1
-            if index==4:
-                img_crop = cv2.rotate(img_crop, rotateCode=cv2.ROTATE_180)
-                logo_mask_crop = cv2.rotate(logo_mask_crop, rotateCode=cv2.ROTATE_180)
-                os.mkdir('test_results/drown_reverse/' + image_name.split('.jpg')[0])
-                cv2.imwrite('test_results/drown_reverse/' + image_name.split('.jpg')[0]+'/'+str(index)+image_name,img_crop)
-                cv2.imwrite('test_results/drown_reverse/' + image_name.split('.jpg')[0] +'/'+ str(index)+'_imagemask_'+image_name, logo_mask_crop*255+img_crop[:,:,0])
-                cv2.imwrite('test_results/drown_reverse/' + image_name.split('.jpg')[0] + '/' + str(index) + '_mask_' + image_name,cv2.addWeighted(img_crop[:,:,0],0.6,logo_mask_crop*255,0.4,0))
-                nums_id += 1
+            if index==1 or index==2:
+                if index==2:
+                    img_crop = cv2.rotate(img_crop, rotateCode=cv2.ROTATE_180)
+                    logo_mask_crop=cv2.rotate(logo_mask_crop,rotateCode = cv2.ROTATE_180)
+                cv2.imwrite('test_results/drown_obverse/' + image_name.split('.jpg')[0] + '/' + image_name.split('.jpg')[
+                    0] + '_' + str(0) + '.jpg', img_crop)
+                # cv2.imwrite('test_results/data_split/' + image_name.split('.jpg')[0] + '_' + str(0) + '.jpg',
+                #             img_crop)
+                cv2.imwrite('test_results/drown_obverse/' + image_name.split('.jpg')[0] + '/' +'mask-'+image_name.split('.jpg')[
+                    0] + '_' + str(0) + '.jpg', logo_mask_crop * 255)
+                # cv2.imwrite(
+                #     'test_results/drown_obverse/' + image_name.split('.jpg')[0] + '/' +'mask-'+image_name.split('.jpg')[
+                #     0] + '_' + str(1) + '.jpg',
+                #     cv2.addWeighted(img_crop[:, :, 0], 0.6, logo_mask_crop * 255, 0.4, 0))
+            else:
+                if index==4:
+                    img_crop = cv2.rotate(img_crop, rotateCode=cv2.ROTATE_180)
+                    logo_mask_crop = cv2.rotate(logo_mask_crop, rotateCode=cv2.ROTATE_180)
+                cv2.imwrite(
+                    'test_results/drown_obverse/' + image_name.split('.jpg')[0] + '/' + image_name.split('.jpg')[
+                        0] + '_' + str(1) + '.jpg', img_crop)
+                # cv2.imwrite('test_results/data_split/' + image_name.split('.jpg')[0] + '_' + str(0) + '.jpg',
+                #             img_crop)
+                cv2.imwrite('test_results/drown_obverse/' + image_name.split('.jpg')[0] + '/' + 'mask-' +
+                            image_name.split('.jpg')[
+                                0] + '_' + str(1) + '.jpg', logo_mask_crop * 255)
+            nums_id += 1
+
+            # if index==1:
+            #     os.mkdir('test_results/up_obverse/'+image_name.split('.jpg')[0])
+            #
+            #     cv2.imwrite('test_results/up_obverse/'+image_name.split('.jpg')[0]+'/'+image_name.split('.jpg')[0] + '_' + str(0) + '.jpg',img_crop)
+            #     cv2.imwrite('test_results/data_split/' + image_name.split('.jpg')[0] + '_' + str(0) + '.jpg',
+            #                 img_crop)
+            #     cv2.imwrite('test_results/up_obverse/'+image_name.split('.jpg')[0]+'/'+'_mask_'+image_name,logo_mask_crop*255)
+            #     cv2.imwrite('test_results/up_obverse/' + image_name.split('.jpg')[0] + '/' + '_imagemask_' + image_name,cv2.addWeighted(img_crop[:,:,0],0.6,logo_mask_crop*255,0.4,0))
+            #     nums_id+=1
+            # if index==2:
+            #     img_crop = cv2.rotate(img_crop,rotateCode = cv2.ROTATE_180)
+            #     logo_mask_crop=cv2.rotate(logo_mask_crop,rotateCode = cv2.ROTATE_180)
+            #     os.mkdir('test_results/up_reverse/' + image_name.split('.jpg')[0])
+            #     cv2.imwrite('test_results/up_reverse/' + image_name.split('.jpg')[0]+'/'+image_name.split('.jpg')[0] + '_' + str(0) + '.jpg',img_crop)
+            #     cv2.imwrite('test_results/data_split/' + image_name.split('.jpg')[0] + '_' + str(0) + '.jpg',
+            #                 img_crop)
+            #     cv2.imwrite('test_results/up_reverse/' + image_name.split('.jpg')[0]+'/' + str(index)+'_mask_'+image_name,logo_mask_crop*255)
+            #     cv2.imwrite('test_results/up_reverse/' + image_name.split('.jpg')[0] + '/' + str(index) + '_imagemask_' + image_name,cv2.addWeighted(img_crop[:,:,0],0.6,logo_mask_crop*255,0.4,0))
+            #     nums_id += 1
+            # if index==3:
+            #     os.mkdir('test_results/drown_obverse/' + image_name.split('.jpg')[0])
+            #     cv2.imwrite('test_results/drown_obverse/' + image_name.split('.jpg')[0]+'/'+image_name.split('.jpg')[0] + '_' + str(1) + '.jpg',img_crop)
+            #     cv2.imwrite('test_results/data_split/' + image_name.split('.jpg')[0] + '_' + str(1) + '.jpg',
+            #                 img_crop)
+            #     cv2.imwrite('test_results/drown_obverse/' + image_name.split('.jpg')[0] +'/'+ str(index)+'_imagemask_'+image_name,logo_mask_crop*255)
+            #     cv2.imwrite('test_results/drown_obverse/' + image_name.split('.jpg')[0] + '/' + str(index) + '_mask_' + image_name, cv2.addWeighted(img_crop[:,:,0],0.6,logo_mask_crop*255,0.4,0))
+            #     nums_id += 1
+            # if index==4:
+            #     img_crop = cv2.rotate(img_crop, rotateCode=cv2.ROTATE_180)
+            #     logo_mask_crop = cv2.rotate(logo_mask_crop, rotateCode=cv2.ROTATE_180)
+            #     os.mkdir('test_results/drown_reverse/' + image_name.split('.jpg')[0])
+            #     cv2.imwrite('test_results/drown_reverse/' + image_name.split('.jpg')[0]+'/'+ image_name.split('.jpg')[0] + '_' + str(1) + '.jpg',img_crop)
+            #     cv2.imwrite('test_results/data_split/' + image_name.split('.jpg')[0] + '_' + str(1) + '.jpg',
+            #                 img_crop)
+            #     cv2.imwrite('test_results/drown_reverse/' + image_name.split('.jpg')[0] +'/'+ str(index)+'_imagemask_'+image_name, logo_mask_crop*255+img_crop[:,:,0])
+            #     cv2.imwrite('test_results/drown_reverse/' + image_name.split('.jpg')[0] + '/' + str(index) + '_mask_' + image_name,cv2.addWeighted(img_crop[:,:,0],0.6,logo_mask_crop*255,0.4,0))
+            #     nums_id += 1
     if nums_id!=2:
         print('id segment is error')
         print(image_name)
